@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Branch Territories and Loan Points</title>
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+    }
+
+    #map {
+      width: 100%;
+      height: 100vh;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+
+  <!-- Leaflet JavaScript -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const map = L.map('map');
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const territoryLayer = L.geoJSON(null, {
+      style: {
+        color: '#174ea6',
+        weight: 2,
+        fillColor: '#75a7e8',
+        fillOpacity: 0.15
+      },
+
+      onEachFeature: function(feature, layer) {
+        const p = feature.properties || {};
+
+        const heading =
+          p.branch || p.Branch_Name || p.branch_name ||
+          p.territory || p.Territory || 'Branch Territory';
+
+        const details = Object.entries(p)
+          .map(([key, value]) => `${key}: ${value ?? ''}`)
+          .join('<br>');
+
+        layer.bindPopup(
+          `<strong>${heading}</strong><br>${details}`
+        );
+
+        layer.on('mouseover', function() {
+          layer.setStyle({ weight: 3, fillOpacity: 0.35 });
+        });
+
+        layer.on('mouseout', function() {
+          territoryLayer.resetStyle(layer);
+        });
+      }
+    });
+
+    const loanPointsLayer = L.geoJSON(null, {
+      pointToLayer: function(feature, latlng) {
+        return L.circleMarker(latlng, {
+          radius: 5,
+          color: '#a61c00',
+          weight: 1,
+          fillColor: '#ff4d4d',
+          fillOpacity: 0.9
+        });
+      },
+
+      onEachFeature: function(feature, layer) {
+        const p = feature.properties || {};
+
+        const fields = [
+          ['Branch', p.branch ?? p.Branch_Name ?? p.branch_name],
+          ['Loan ID', p.loan_id ?? p.Loan_Id ?? p.Loan_ID],
+          ['Latitude', p.latitude ?? p.avg_latitu],
+          ['Longitude', p.longitude ?? p.avg_longit]
+        ];
+
+        const details = fields
+          .map(([label, value]) =>
+            `${label}: ${value ?? 'Not available'}`
+          )
+          .join('<br>');
+
+        layer.bindPopup(`<strong>Loan Point Details</strong><br>${details}`);
+      }
+    });
+
+    async function loadMapData() {
+      try {
+        const [territoryResponse, pointsResponse] = await Promise.all([
+          fetch('./branch_territories.geojson'),
+          fetch('./loan_points.geojson')
+        ]);
+
+        if (!territoryResponse.ok) {
+          throw new Error('Cannot load branch_territories.geojson');
+        }
+
+        if (!pointsResponse.ok) {
+          throw new Error('Cannot load loan_points.geojson');
+        }
+
+        const territories = await territoryResponse.json();
+        const points = await pointsResponse.json();
+
+        territoryLayer.addData(territories).addTo(map);
+        loanPointsLayer.addData(points).addTo(map);
+
+        L.control.layers(null, {
+          'Branch Territories': territoryLayer,
+          'Loan Points': loanPointsLayer
+        }, {
+          collapsed: false
+        }).addTo(map);
+
+        const combined = L.featureGroup([
+          territoryLayer,
+          loanPointsLayer
+        ]);
+
+        if (combined.getLayers().length > 0 &&
+            combined.getBounds().isValid()) {
+          map.fitBounds(combined.getBounds(), {
+            padding: [20, 20],
+            maxZoom: 12
+          });
+        } else {
+          map.setView([22.5, 79.5], 5);
+        }
+
+        console.log('Territories:', territories.features?.length ?? 0);
+        console.log('Loan points:', points.features?.length ?? 0);
+
+      } catch (error) {
+        console.error('Map loading error:', error);
+        alert('Unable to load map data: ' + error.message);
+      }
+    }
+
+    loadMapData();
+  </script>
+</body>
+</html>
