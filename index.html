@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Branch Territories, Village Territories and Loan Points</title>
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+    }
+
+    #map {
+      width: 100%;
+      height: 100vh;
+    }
+
+    /* CSS branch pin: no PNG image required */
+    .branch-pin {
+      width: 10px;
+      height: 15px;
+      background: #1565c0;
+      border: 2px solid #ffffff;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      box-sizing: border-box;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .branch-pin span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ffffff;
+      display: block;
+    }
+
+    .branch-pin-wrapper {
+      background: transparent;
+      border: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+
+  <!-- Leaflet JavaScript -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // --------------------------------------------------
+    // 1. INITIALIZE MAP
+    // --------------------------------------------------
+
+    const map = L.map('map');
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+
+    // --------------------------------------------------
+    // 2. BRANCH NAME HELPER
+    // Supports common variations in property names.
+    // --------------------------------------------------
+
+    function getBranchName(properties) {
+      const p = properties || {};
+
+      const value =
+        p.branch ??
+        p.Branch ??
+        p.BRANCH ??
+        p.branch_name ??
+        p.Branch_Name ??
+        p.BranchName ??
+        p.branchName ??
+        p.branch_nm ??
+        p.BRANCH_NAME;
+
+      return String(value ?? 'Unassigned').trim() || 'Unassigned';
+    }
+
+
+    // --------------------------------------------------
+    // 3. CONSISTENT COLOR FOR EACH BRANCH
+    // Villages belonging to the same branch get the
+    // same color.
+    // --------------------------------------------------
+
+    const branchColors = [
+      '#e6194b',
+      '#3cb44b',
+      '#4363d8',
+      '#f58231',
+      '#911eb4',
+      '#008080',
+      '#f032e6',
+      '#9a6324',
+      '#469990',
+      '#d62728',
+      '#1f77b4',
+      '#bcbd22',
+      '#17becf',
+      '#e377c2',
+      '#2ca02c',
+      '#9467bd',
+      '#ff7f0e',
+      '#7f7f7f',
+      '#006400',
+      '#b03060'
+    ];
+
+    function getBranchColor(branchName) {
+      let hash = 0;
+      const name = String(branchName).trim().toLowerCase();
+
+      for (let i = 0; i < name.length; i++) {
+        hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+      }
+
+      return branchColors[hash % branchColors.length];
+    }
+
+
+    // --------------------------------------------------
+    // 4. EXISTING LAYER: BRANCH TERRITORIES
+    // --------------------------------------------------
+
+    const territoryLayer = L.geoJSON(null, {
+      style: function(feature) {
+        const branch = getBranchName(feature.properties);
+        const color = getBranchColor(branch);
+
+        return {
+          color: color,
+          weight: 2,
+          fillColor: color,
+          fillOpacity: 0.30
+        };
+      },
+
+      onEachFeature: function(feature, layer) {
+        const p = feature.properties || {};
+
+        const heading =
+          p.branch ||
+          p.Branch_Name ||
+          p.branch_name ||
+          p.territory ||
+          p.Territory ||
+          'Branch Territory';
+
+        const details = Object.entries(p)
+          .map(([key, value]) => `${key}: ${value ?? ''}`)
+          .join('<br>');
+
+        layer.bindPopup(
+          `<strong>${heading}</strong><br>${details}`
+        );
+
+        layer.on('mouseover', function() {
+          layer.setStyle({
+            weight: 3,
+            fillOpacity: 0.45
+          });
+        });
+
+        layer.on('mouseout', function() {
+          territoryLayer.resetStyle(layer);
+        });
+      }
+    });
+
+
+    // --------------------------------------------------
+    // 5. EXISTING LAYER: LOAN POINTS
+    // --------------------------------------------------
+
+    const loanPointsLayer = L.geoJSON(null, {
+      pointToLayer: function(feature, latlng) {
+        return L.circleMarker(latlng, {
+          radius: 5,
+          color: '#a61c00',
+          weight: 1,
+          fillColor: '#ff4d4d',
+          fillOpacity: 0.9
+        });
+      },
+
+      onEachFeature: function(feature, layer) {
+        const p = feature.properties || {};
+
+        const fields = [
+          ['Branch', p.branch ?? p.Branch_Name ?? p.branch_name],
+          ['Loan ID', p.loan_id ?? p.Loan_Id ?? p.Loan_ID],
+          ['Latitude', p.latitude ?? p.avg_latitu],
+          ['Longitude', p.longitude ?? p.avg_longit]
+        ];
+
+        const details = fields
+          .map(([label, value]) =>
+            `${label}: ${value ?? 'Not available'}`
+          )
+          .join('<br>');
+
+        layer.bindPopup(
+          `<strong>Loan Point Details</strong><br>${details}`
+        );
+      }
+    });
+
+
+    // --------------------------------------------------
+    // 6. NEW LAYER: BRANCH POINTS WITH CSS PIN MARKERS
+    // --------------------------------------------------
+
+    const branchPinIcon = L.divIcon({
+      className: 'branch-pin-wrapper',
+      html: '<div class="branch-pin"><span></span></div>',
+      iconSize: [18, 25],
+      iconAnchor: [16, 38],
+      popupAnchor: [0, -38]
+    });
+
+    const branchLayer = L.geoJSON(null, {
+      pointToLayer: function(feature, latlng) {
+        return L.marker(latlng, {
+          icon: branchPinIcon,
+          title: getBranchName(feature.properties)
+        });
+      },
+
+      onEachFeature: function(feature, layer) {
+        const p = feature.properties || {};
+        const branch = getBranchName(p);
+
+        const details = Object.entries(p)
+          .map(([key, value]) => `${key}: ${value ?? ''}`)
+          .join('<br>');
+
+        layer.bindPopup(
+          `<strong>Branch: ${branch}</strong><br>${details}`
+        );
+      }
+    });
+
+
+    // --------------------------------------------------
+    // 7. NEW LAYER: VILLAGE TERRITORIES
+    // Each village is colored by its branch name.
+    // --------------------------------------------------
+
+    const villageLayer = L.geoJSON(null, {
+  style: function(feature) {
+    return {
+      color: '#D3D3D3',       // Light grey border
+      weight: 1,              // Border thickness
+      fillColor: '#F8F5E9',   // Off-white fill
+      fillOpacity: 0.20       // 20% opacity
+    };
+  },
+
+      onEachFeature: function(feature, layer) {
+        const p = feature.properties || {};
+        const branch = getBranchName(p);
+
+        const details = Object.entries(p)
+          .map(([key, value]) => `${key}: ${value ?? ''}`)
+          .join('<br>');
+
+        layer.bindPopup(
+          `<strong>Village Territory</strong><br>` +
+          `<strong>Branch: ${branch}</strong><br>` +
+          details
+        );
+
+        layer.on('mouseover', function() {
+          layer.setStyle({
+            weight: 3,
+            fillOpacity: 0.55
+          });
+        });
+
+        layer.on('mouseout', function() {
+          villageLayer.resetStyle(layer);
+        });
+      }
+    });
+
+
+    // --------------------------------------------------
+    // 8. LOAD ALL FOUR GEOJSON FILES
+    // --------------------------------------------------
+
+    async function loadGeoJSON(filename) {
+      const url = new URL(filename, document.baseURI);
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to load ${filename}: HTTP ${response.status}. URL: ${url.href}`
+        );
+      }
+
+      return response.json();
+    }
+
+    async function loadMapData() {
+      try {
+        const [
+          territories,
+          points,
+          branches,
+          villages
+        ] = await Promise.all([
+          loadGeoJSON('./branch_territories.geojson'),
+          loadGeoJSON('./loan_points.geojson'),
+          loadGeoJSON('./branch.geojson'),
+          loadGeoJSON('./village_territories.geojson')
+        ]);
+
+        // Add data to each layer
+        territoryLayer.addData(territories);
+        loanPointsLayer.addData(points);
+        branchLayer.addData(branches);
+        villageLayer.addData(villages);
+
+        // Add all layers to the map initially
+        territoryLayer.addTo(map);
+        loanPointsLayer.addTo(map);
+        branchLayer.addTo(map);
+        villageLayer.addTo(map);
+
+
+        // --------------------------------------------------
+        // 9. LAYER CONTROL
+        // Toggle each layer independently.
+        // --------------------------------------------------
+
+        L.control.layers(null, {
+          'Branch Territories': territoryLayer,
+          'Loan Points': loanPointsLayer,
+          'Branch Points (Pins)': branchLayer,
+          'Village Territories (Branch Colors)': villageLayer
+        }, {
+          collapsed: false
+        }).addTo(map);
+
+
+        // --------------------------------------------------
+        // 10. ZOOM TO INCLUDE ALL FOUR LAYERS
+        // --------------------------------------------------
+
+        const combined = L.featureGroup([
+          territoryLayer,
+          loanPointsLayer,
+          branchLayer,
+          villageLayer
+        ]);
+
+        const bounds = combined.getBounds();
+
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, {
+            padding: [20, 20],
+            maxZoom: 12
+          });
+        } else {
+          map.setView([22.5, 79.5], 5);
+        }
+
+
+        // --------------------------------------------------
+        // 11. CONSOLE INFORMATION
+        // --------------------------------------------------
+
+        console.log(
+          'Branch territories:',
+          territories.features?.length ?? 0
+        );
+
+        console.log(
+          'Loan points:',
+          points.features?.length ?? 0
+        );
+
+        console.log(
+          'Branch points:',
+          branches.features?.length ?? 0
+        );
+
+        console.log(
+          'Village territories:',
+          villages.features?.length ?? 0
+        );
+
+      } catch (error) {
+        console.error('Map loading error:', error);
+        alert('Unable to load map data: ' + error.message);
+      }
+    }
+
+    loadMapData();
+  </script>
+</body>
+</html>
