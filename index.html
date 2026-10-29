@@ -224,13 +224,9 @@
       p.Territory ||
       'Branch Territory';
 
-    const details = Object.entries(p)
-      .map(([key, value]) => ${key}: ${value ?? ''})
-      .join('<br>');
-
-    layer.bindPopup(
-      <strong>${heading}</strong><br>${details}
-    );
+   const details = Object.entries(p)
+  .map(([key, value]) => `$DIL1: $DIL2`)
+  .join('<br>');
 
     layer.on('mouseover', function() {
       layer.setStyle({
