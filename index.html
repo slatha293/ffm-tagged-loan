@@ -100,6 +100,17 @@
 
 #branch-search button:hover {
   background: #004d00;
+  }
+/* Branch name labels */
+.branch-label {
+  background: white;
+  border: 1px solid #006400;
+  border-radius: 3px;
+  color: #006400;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 2px 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 </style>
  </head>
@@ -250,39 +261,36 @@
     // 5. EXISTING LAYER: LOAN POINTS
     // --------------------------------------------------
 
-    const loanPointsLayer = L.geoJSON(null, {
-      pointToLayer: function(feature, latlng) {
-        return L.circleMarker(latlng, {
-          radius: 5,
-          color: '#a61c00',
-          weight: 1,
-          fillColor: '#ff4d4d',
-          fillOpacity: 0.9
-        });
-      },
+    const branchLayer = L.geoJSON(null, {
+  pointToLayer: function(feature, latlng) {
+    return L.marker(latlng, {
+      icon: branchPinIcon,
+      title: getBranchName(feature.properties)
+    });
+  },
 
-      onEachFeature: function(feature, layer) {
-        const p = feature.properties || {};
+  onEachFeature: function(feature, layer) {
+    const p = feature.properties || {};
+    const branch = getBranchName(p);
 
-        const fields = [
-          ['Branch', p.branch ?? p.Branch_Name ?? p.branch_name],
-          ['Loan ID', p.loan_id ?? p.Loan_Id ?? p.Loan_ID],
-          ['Latitude', p.latitude ?? p.avg_latitu],
-          ['Longitude', p.longitude ?? p.avg_longit]
-        ];
-
-        const details = fields
-          .map(([label, value]) =>
-            `${label}: ${value ?? 'Not available'}`
-          )
-          .join('<br>');
-
-        layer.bindPopup(
-          `<strong>Loan Point Details</strong><br>${details}`
-        );
-      }
+    // NEW: Display branch name permanently beside the pin
+    layer.bindTooltip(branch, {
+      permanent: true,
+      direction: 'right',
+      offset: [6, -5],
+      className: 'branch-label'
     });
 
+    // Existing popup details (preserved)
+    const details = Object.entries(p)
+      .map(([key, value]) => `${key}: ${value ?? ''}`)
+      .join('<br>');
+
+    layer.bindPopup(
+      `<strong>Branch: ${branch}</strong><br>${details}`
+    );
+  }
+});
 
     // --------------------------------------------------
     // 6. NEW LAYER: BRANCH POINTS WITH CSS PIN MARKERS
