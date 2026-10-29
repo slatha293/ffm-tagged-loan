@@ -338,22 +338,28 @@
     let exactMatch = null;
     let partialMatch = null;
 
-    // Search in branch_territories layer
-    branchTerritoriesLayer.eachLayer(function(layer) {
+    // Search within branch territory polygons
+    territoryLayer.eachLayer(function(layer) {
         if (!layer.feature) return;
 
-        const properties = layer.feature.properties || {};
+        const p = layer.feature.properties || {};
 
+        // Get branch name from territory properties
         const branchName = String(
-            properties.branch ||
-            properties.Branch ||
-            properties.branch ||
+            p.branch ||
+            p.Branch_Name ||
+            p.branch_name ||
+            p.territory ||
+            p.Territory ||
             ''
         ).trim().toLowerCase();
 
         if (branchName === searchText) {
             exactMatch = layer;
-        } else if (branchName.includes(searchText) && !partialMatch) {
+        } else if (
+            branchName.includes(searchText) &&
+            !partialMatch
+        ) {
             partialMatch = layer;
         }
     });
@@ -366,7 +372,7 @@
             maxZoom: 15
         });
 
-        matchedLayer.openPopup?.();
+        matchedLayer.openPopup();
     } else {
         alert('Branch not found in branch territories.');
     }
