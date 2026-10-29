@@ -345,8 +345,8 @@
         const properties = layer.feature.properties || {};
 
         const branchName = String(
-            properties.Branch_Name ||
-            properties.branch_name ||
+            properties.branch ||
+            properties.Branch ||
             properties.BRANCH_NAME ||
             ''
         ).trim().toLowerCase();
@@ -380,7 +380,7 @@
     const villageLayer = L.geoJSON(null, {
   style: function(feature) {
     return {
-      color: '#D3D3D3',       // Light grey border
+      color: '#404040',       // Light grey border
       weight: 1,              // Border thickness
       fillColor: '#F8F5E9',   // Off-white fill
       fillOpacity: 0.20       // 20% opacity
@@ -440,9 +440,9 @@
           branches,
           villages
         ] = await Promise.all([
-          loadGeoJSON('./branch_territories.geojson'),
-          loadGeoJSON('./loan_points.geojson'),
           loadGeoJSON('./branch.geojson'),
+          loadGeoJSON('./loan_points.geojson'),
+          loadGeoJSON('./branch_territories.geojson'),
           loadGeoJSON('./village_territories.geojson')
         ]);
 
