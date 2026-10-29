@@ -326,57 +326,51 @@
     // --------------------------------------------------
 
     function searchBranch() {
-      const input = document.getElementById('branchSearchInput');
-      const searchText = input.value.trim().toLowerCase();
+    const input = document.getElementById('branchSearchInput');
+    const searchText = input.value.trim().toLowerCase();
 
-      if (!searchText) {
+    if (!searchText) {
         alert('Please enter a branch name.');
         input.focus();
         return;
-      }
-
-      let exactMatch = null;
-      let partialMatch = null;
-
-      branchLayer.eachLayer(function(layer) {
-        if (!layer.feature || !layer.getLatLng) return;
-
-        // Search ONLY the 'branch' field from branch.geojson.
-        const branchName = String(layer.feature.properties?.branch ?? '')
-          .trim()
-          .toLowerCase();
-
-        if (branchName === searchText && !exactMatch) {
-          exactMatch = layer;
-        } else if (branchName.includes(searchText) && !partialMatch) {
-          partialMatch = layer;
-        }
-      });
-
-      const match = exactMatch || partialMatch;
-
-      if (!match) {
-        alert('Branch not found. Please check the branch name.');
-        return;
-      }
-
-      // Ensure the Branch Points layer is visible before zooming.
-      if (!map.hasLayer(branchLayer)) {
-        branchLayer.addTo(map);
-      }
-
-      map.setView(match.getLatLng(), 15);
-      match.openPopup();
     }
 
-    // Press Enter in the search box to search.
-    document.getElementById('branchSearchInput')
-      .addEventListener('keydown', function(event) {
-        if (event.key === 'Enter') {
-          searchBranch();
-        }
-      });
+    let exactMatch = null;
+    let partialMatch = null;
 
+    // Search in branch_territories layer
+    branchTerritoriesLayer.eachLayer(function(layer) {
+        if (!layer.feature) return;
+
+        const properties = layer.feature.properties || {};
+
+        const branchName = String(
+            properties.Branch_Name ||
+            properties.branch_name ||
+            properties.BRANCH_NAME ||
+            ''
+        ).trim().toLowerCase();
+
+        if (branchName === searchText) {
+            exactMatch = layer;
+        } else if (branchName.includes(searchText) && !partialMatch) {
+            partialMatch = layer;
+        }
+    });
+
+    const matchedLayer = exactMatch || partialMatch;
+
+    if (matchedLayer) {
+        map.fitBounds(matchedLayer.getBounds(), {
+            padding: [30, 30],
+            maxZoom: 15
+        });
+
+        matchedLayer.openPopup?.();
+    } else {
+        alert('Branch not found in branch territories.');
+    }
+}
 
     // --------------------------------------------------
     // 7. NEW LAYER: VILLAGE TERRITORIES
