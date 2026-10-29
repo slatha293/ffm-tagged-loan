@@ -106,58 +106,67 @@
     });
 
     async function loadMapData() {
-      try {
-        const [territoryResponse, pointsResponse] = await Promise.all([
-          fetch('./branch_territories.geojson'),
-          fetch('./loan_points.geojson')
-        ]);
+  const loadGeoJSON = async (filename) => {
+    const url = new URL(filename, document.baseURI);
 
-        if (!territoryResponse.ok) {
-          throw new Error('Cannot load branch_territories.geojson');
-        }
+    const response = await fetch(url);
 
-        if (!pointsResponse.ok) {
-          throw new Error('Cannot load loan_points.geojson');
-        }
-
-        const territories = await territoryResponse.json();
-        const points = await pointsResponse.json();
-
-        territoryLayer.addData(territories).addTo(map);
-        loanPointsLayer.addData(points).addTo(map);
-
-        L.control.layers(null, {
-          'Branch Territories': territoryLayer,
-          'Loan Points': loanPointsLayer
-        }, {
-          collapsed: false
-        }).addTo(map);
-
-        const combined = L.featureGroup([
-          territoryLayer,
-          loanPointsLayer
-        ]);
-
-        if (combined.getLayers().length > 0 &&
-            combined.getBounds().isValid()) {
-          map.fitBounds(combined.getBounds(), {
-            padding: [20, 20],
-            maxZoom: 12
-          });
-        } else {
-          map.setView([22.5, 79.5], 5);
-        }
-
-        console.log('Territories:', territories.features?.length ?? 0);
-        console.log('Loan points:', points.features?.length ?? 0);
-
-      } catch (error) {
-        console.error('Map loading error:', error);
-        alert('Unable to load map data: ' + error.message);
-      }
+    if (!response.ok) {
+      throw new Error(
+        `Failed to load ${filename}: HTTP ${response.status}. URL: ${url.href}`
+      );
     }
 
-    loadMapData();
+    return response.json();
+  };
+
+  try {
+    const [territories, points] = await Promise.all([
+      loadGeoJSON('./branch_territories.geojson'),
+      loadGeoJSON('./loan_points.geojson')
+    ]);
+
+    territoryLayer.addData(territories).addTo(map);
+    loanPointsLayer.addData(points).addTo(map);
+
+    L.control.layers(null, {
+      'Branch Territories': territoryLayer,
+      'Loan Points': loanPointsLayer
+    }, {
+      collapsed: false
+    }).addTo(map);
+
+    const combined = L.featureGroup([
+      territoryLayer,
+      loanPointsLayer
+    ]);
+
+    if (combined.getBounds().isValid()) {
+      map.fitBounds(combined.getBounds(), {
+        padding: [20, 20],
+        maxZoom: 12
+      });
+    } else {
+      map.setView([22.5, 79.5], 5);
+    }
+
+    console.log(
+      'Territories:',
+      territories.features?.length ?? 0
+    );
+
+    console.log(
+      'Loan points:',
+      points.features?.length ?? 0
+    );
+
+  } catch (error) {
+    console.error('Map loading error:', error);
+    alert('Unable to load map data: ' + error.message);
+  }
+}
+
+loadMapData();
   </script>
 </body>
 </html>
