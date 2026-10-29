@@ -25,36 +25,95 @@
     }
 
     /* CSS branch pin: no PNG image required */
-    .branch-pin {
-      width: 10px;
-      height: 15px;
-      background: #1565c0;
-      border: 2px solid #ffffff;
-      border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg);
-      box-sizing: border-box;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .branch-pin span {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #ffffff;
-      display: block;
-    }
-
     .branch-pin-wrapper {
-      background: transparent;
-      border: none;
-    }
-  </style>
-</head>
+  background: transparent;
+  border: none;
+}
+
+.branch-pin {
+  position: relative;
+  width: 10px;
+  height: 10px;
+
+  background: linear-gradient(
+    135deg,
+    #4CAF50 0%,
+    #006400 50%,
+    #003300 100%
+  );
+
+  border: 1px solid #003300;
+  border-radius: 50%;
+
+  box-shadow:
+    1px 2px 3px rgba(0, 0, 0, 0.4),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.25);
+
+  box-sizing: border-box;
+}
+
+/* Pointed bottom tip */
+.branch-pin::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  left: 50%;
+  bottom: -3px;
+
+  background: #006400;
+  border-right: 1px solid #003300;
+  border-bottom: 1px solid #003300;
+
+  transform: translateX(-50%) rotate(45deg);
+  z-index: -1;
+}
+    #branch-search {
+  position: absolute;
+  top: 15px;
+  left: 60px;
+  z-index: 1000;
+  display: flex;
+  gap: 5px;
+  background: white;
+  padding: 8px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+    
+#branchSearchInput {
+  width: 220px;
+  padding: 8px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+#branch-search button {
+  background: #006400;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#branch-search button:hover {
+  background: #004d00;
+}
+</style>
+ </head>
 
 <body>
+  <div id="branch-search">
+  <input
+    type="text"
+    id="branchSearchInput"
+    placeholder="Enter branch name (branch field)..."
+  />
+  <button type="button" onclick="searchBranch()">Search</button>
+</div>
+
   <div id="map"></div>
 
   <!-- Leaflet JavaScript -->
@@ -229,13 +288,13 @@
     // 6. NEW LAYER: BRANCH POINTS WITH CSS PIN MARKERS
     // --------------------------------------------------
 
-    const branchPinIcon = L.divIcon({
-      className: 'branch-pin-wrapper',
-      html: '<div class="branch-pin"><span></span></div>',
-      iconSize: [18, 25],
-      iconAnchor: [16, 38],
-      popupAnchor: [0, -38]
-    });
+  const branchPinIcon = L.divIcon({
+  className: 'branch-pin-wrapper',
+  html: '<div class="branch-pin"></div>',
+  iconSize: [10, 13],
+  iconAnchor: [5, 13],
+  popupAnchor: [0, -13]
+});
 
     const branchLayer = L.geoJSON(null, {
       pointToLayer: function(feature, latlng) {
@@ -258,6 +317,65 @@
         );
       }
     });
+
+
+    // --------------------------------------------------
+    // BRANCH SEARCH
+    // Finds a branch pin by its branch name.
+    // Exact matches are preferred; partial matches also work.
+    // --------------------------------------------------
+
+    function searchBranch() {
+      const input = document.getElementById('branchSearchInput');
+      const searchText = input.value.trim().toLowerCase();
+
+      if (!searchText) {
+        alert('Please enter a branch name.');
+        input.focus();
+        return;
+      }
+
+      let exactMatch = null;
+      let partialMatch = null;
+
+      branchLayer.eachLayer(function(layer) {
+        if (!layer.feature || !layer.getLatLng) return;
+
+        // Search ONLY the 'branch' field from branch.geojson.
+        const branchName = String(layer.feature.properties?.branch ?? '')
+          .trim()
+          .toLowerCase();
+
+        if (branchName === searchText && !exactMatch) {
+          exactMatch = layer;
+        } else if (branchName.includes(searchText) && !partialMatch) {
+          partialMatch = layer;
+        }
+      });
+
+      const match = exactMatch || partialMatch;
+
+      if (!match) {
+        alert('Branch not found. Please check the branch name.');
+        return;
+      }
+
+      // Ensure the Branch Points layer is visible before zooming.
+      if (!map.hasLayer(branchLayer)) {
+        branchLayer.addTo(map);
+      }
+
+      map.setView(match.getLatLng(), 15);
+      match.openPopup();
+    }
+
+    // Press Enter in the search box to search.
+    document.getElementById('branchSearchInput')
+      .addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+          searchBranch();
+        }
+      });
 
 
     // --------------------------------------------------
