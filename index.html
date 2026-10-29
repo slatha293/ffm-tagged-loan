@@ -25,32 +25,43 @@
     }
 
     /* CSS branch pin: no PNG image required */
-    .branch-pin {
-      width: 28px;
-      height: 28px;
-      background: #1565c0;
-      border: .6px solid #00631f;
-      border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg);
-      box-sizing: border-box;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .branch-pin span {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: #00631f;
-      display: block;
-    }
-
     .branch-pin-wrapper {
-      background: transparent;
-      border: none;
-    }
+  background: transparent;
+  border: none;
+}
+
+.branch-pin {
+  position: relative;
+  width: 16px;
+  height: 22px;
+  background: linear-gradient(
+    135deg,
+    #ff5555 0%,
+    #ed0000 50%,
+    #990000 100%
+  );
+  border: 1px solid #990000;
+  border-radius: 50% 50% 50% 50%;
+  box-shadow:
+    1px 2px 4px rgba(0, 0, 0, 0.4),
+    inset -2px -2px 3px rgba(80, 0, 0, 0.25);
+  box-sizing: border-box;
+}
+
+/* Centered pointed tip */
+.branch-pin::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  left: 50%;
+  bottom: -4px;
+  background: #c90000;
+  border-right: 1px solid #990000;
+  border-bottom: 1px solid #990000;
+  transform: translateX(-50%) rotate(45deg);
+  z-index: -1;
+}
   </style>
 </head>
 
@@ -229,13 +240,13 @@
     // 6. NEW LAYER: BRANCH POINTS WITH CSS PIN MARKERS
     // --------------------------------------------------
 
-    const branchPinIcon = L.divIcon({
-      className: 'branch-pin-wrapper',
-      html: '<div class="branch-pin"><span></span></div>',
-      iconSize: [18, 25],
-      iconAnchor: [16, 38],
-      popupAnchor: [0, -38]
-    });
+   const branchPinIcon = L.divIcon({
+  className: 'branch-pin-wrapper',
+  html: '<div class="branch-pin"></div>',
+  iconSize: [22, 28],
+  iconAnchor: [11, 27],
+  popupAnchor: [0, -26]
+});
 
     const branchLayer = L.geoJSON(null, {
       pointToLayer: function(feature, latlng) {
