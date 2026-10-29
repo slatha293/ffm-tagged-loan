@@ -101,17 +101,6 @@
 #branch-search button:hover {
   background: #004d00;
   }
-/* Branch name labels */
-.branch-label {
-  background: white;
-  border: 1px solid #006400;
-  border-radius: 3px;
-  color: #006400;
-  font-size: 11px;
-  font-weight: bold;
-  padding: 2px 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
 </style>
  </head>
 
@@ -262,35 +251,26 @@
     // --------------------------------------------------
 
     const branchLayer = L.geoJSON(null, {
-  pointToLayer: function(feature, latlng) {
-    return L.marker(latlng, {
-      icon: branchPinIcon,
-      title: getBranchName(feature.properties)
+      pointToLayer: function(feature, latlng) {
+        return L.marker(latlng, {
+          icon: branchPinIcon,
+          title: getBranchName(feature.properties)
+        });
+      },
+
+      onEachFeature: function(feature, layer) {
+        const p = feature.properties || {};
+        const branch = getBranchName(p);
+
+        const details = Object.entries(p)
+          .map(([key, value]) => ${key}: ${value ?? ''})
+          .join('<br>');
+
+        layer.bindPopup(
+          <strong>Branch: ${branch}</strong><br>${details}
+        );
+      }
     });
-  },
-
-  onEachFeature: function(feature, layer) {
-    const p = feature.properties || {};
-    const branch = getBranchName(p);
-
-    // NEW: Display branch name permanently beside the pin
-    layer.bindTooltip(branch, {
-      permanent: true,
-      direction: 'right',
-      offset: [6, -5],
-      className: 'branch-label'
-    });
-
-    // Existing popup details (preserved)
-    const details = Object.entries(p)
-      .map(([key, value]) => `${key}: ${value ?? ''}`)
-      .join('<br>');
-
-    layer.bindPopup(
-      `<strong>Branch: ${branch}</strong><br>${details}`
-    );
-  }
-});
 
     // --------------------------------------------------
     // 6. NEW LAYER: BRANCH POINTS WITH CSS PIN MARKERS
@@ -325,7 +305,6 @@
         );
       }
     });
-
 
     // --------------------------------------------------
     // BRANCH SEARCH
