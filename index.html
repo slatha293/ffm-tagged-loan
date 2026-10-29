@@ -201,17 +201,17 @@
     // --------------------------------------------------
 
     const territoryLayer = L.geoJSON(null, {
-      style: function(feature) {
-        const branch = getBranchName(feature.properties);
-        const color = getBranchColor(branch);
+   style: function(feature) {
+    const branch = getBranchName(feature.properties);
+    const color = getBranchColor(branch);
 
-        return {
-          color: color,
-          weight: 2,
-          fillColor: color,
-          fillOpacity: 0.30
-        };
-      },
+       return {
+      color: '#00008B',  // Same dark blue border for all territories
+      weight: 2,
+      fillColor: color,  // Different fill color by branch
+      fillOpacity: 0.30
+    };
+  },
 
       onEachFeature: function(feature, layer) {
         const p = feature.properties || {};
