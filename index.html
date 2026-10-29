@@ -26,8 +26,8 @@
 
     /* CSS branch pin: no PNG image required */
     .branch-pin {
-      width: 28px;
-      height: 28px;
+      width: 10px;
+      height: 15px;
       background: #1565c0;
       border: 2px solid #ffffff;
       border-radius: 50% 50% 50% 0;
@@ -142,11 +142,16 @@
     // --------------------------------------------------
 
     const territoryLayer = L.geoJSON(null, {
-      style: {
-        color: '#174ea6',
-        weight: 2,
-        fillColor: '#75a7e8',
-        fillOpacity: 0.15
+      style: function(feature) {
+        const branch = getBranchName(feature.properties);
+        const color = getBranchColor(branch);
+
+        return {
+          color: color,
+          weight: 2,
+          fillColor: color,
+          fillOpacity: 0.30
+        };
       },
 
       onEachFeature: function(feature, layer) {
@@ -171,7 +176,7 @@
         layer.on('mouseover', function() {
           layer.setStyle({
             weight: 3,
-            fillOpacity: 0.35
+            fillOpacity: 0.45
           });
         });
 
@@ -227,7 +232,7 @@
     const branchPinIcon = L.divIcon({
       className: 'branch-pin-wrapper',
       html: '<div class="branch-pin"><span></span></div>',
-      iconSize: [32, 40],
+      iconSize: [18, 25],
       iconAnchor: [16, 38],
       popupAnchor: [0, -38]
     });
@@ -261,17 +266,14 @@
     // --------------------------------------------------
 
     const villageLayer = L.geoJSON(null, {
-      style: function(feature) {
-        const branch = getBranchName(feature.properties);
-        const color = getBranchColor(branch);
-
-        return {
-          color: color,
-          weight: 2,
-          fillColor: color,
-          fillOpacity: 0.30
-        };
-      },
+  style: function(feature) {
+    return {
+      color: '#D3D3D3',       // Light grey border
+      weight: 1,              // Border thickness
+      fillColor: '#F8F5E9',   // Off-white fill
+      fillOpacity: 0.20       // 20% opacity
+    };
+  },
 
       onEachFeature: function(feature, layer) {
         const p = feature.properties || {};
