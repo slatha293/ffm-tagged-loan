@@ -441,29 +441,26 @@
     async function loadMapData() {
       try {
         const [
-          territories,
-          points,
           branches,
+          points,
+          territories,
           villages
         ] = await Promise.all([
-          loadGeoJSON('./branch_territories.geojson'),
-          loadGeoJSON('./loan_points.geojson'),
           loadGeoJSON('./branch.geojson'),
+          loadGeoJSON('./loan_points.geojson'),
+          loadGeoJSON('./branch_territories.geojson'),
           loadGeoJSON('./village_territories.geojson')
         ]);
 
         // Add data to each layer
-        territoryLayer.addData(territories);
-        loanPointsLayer.addData(points);
-        branchLayer.addData(branches);
-        villageLayer.addData(villages);
+         branchLayer.addData(branches);
+         loanPointsLayer.addData(points);
+         territoryLayer.addData(territories);
+         villageLayer.addData(villages);
 
         // Add all layers to the map initially
         territoryLayer.addTo(map);
         loanPointsLayer.addTo(map);
-        branchLayer.addTo(map);
-        villageLayer.addTo(map);
-
 
         // --------------------------------------------------
         // 9. LAYER CONTROL
@@ -471,14 +468,13 @@
         // --------------------------------------------------
 
         L.control.layers(null, {
-          'Branch Territories': territoryLayer,
-          'Loan Points': loanPointsLayer,
-          'Branch Points (Pins)': branchLayer,
-          'Village Territories (Branch Colors)': villageLayer
+          'Branch boundaries': territoryLayer,
+          'Tagged Loan Points': loanPointsLayer,
+          'Branch': branchLayer,
+          'Village boundary': villageLayer
         }, {
           collapsed: false
         }).addTo(map);
-
 
         // --------------------------------------------------
         // 10. ZOOM TO INCLUDE ALL FOUR LAYERS
@@ -501,8 +497,6 @@
         } else {
           map.setView([22.5, 79.5], 5);
         }
-
-
         // --------------------------------------------------
         // 11. CONSOLE INFORMATION
         // --------------------------------------------------
