@@ -326,58 +326,57 @@
     // --------------------------------------------------
 
     function searchBranch() {
-      const input = document.getElementById('branchSearchInput');
-      const searchText = input.value.trim().toLowerCase();
+    const input = document.getElementById('branchSearchInput');
+    const searchText = input.value.trim().toLowerCase();
 
-      if (!searchText) {
+    if (!searchText) {
         alert('Please enter a branch name.');
         input.focus();
         return;
-      }
-
-      let exactMatch = null;
-      let partialMatch = null;
-
-      branchLayer.eachLayer(function(layer) {
-        if (!layer.feature || !layer.getLatLng) return;
-
-        // Search ONLY the 'branch' field from branch.geojson.
-        const branchName = String(layer.feature.properties?.branch ?? '')
-          .trim()
-          .toLowerCase();
-
-        if (branchName === searchText && !exactMatch) {
-          exactMatch = layer;
-        } else if (branchName.includes(searchText) && !partialMatch) {
-          partialMatch = layer;
-        }
-      });
-
-      const match = exactMatch || partialMatch;
-
-      if (!match) {
-        alert('Branch not found. Please check the branch name.');
-        return;
-      }
-
-      // Ensure the Branch Points layer is visible before zooming.
-      if (!map.hasLayer(branchLayer)) {
-        branchLayer.addTo(map);
-      }
-
-      map.setView(match.getLatLng(), 15);
-      match.openPopup();
     }
 
-    // Press Enter in the search box to search.
-    document.getElementById('branchSearchInput')
-      .addEventListener('keydown', function(event) {
-        if (event.key === 'Enter') {
-          searchBranch();
+    let exactMatch = null;
+    let partialMatch = null;
+
+    // Search within branch territory polygons
+    territoryLayer.eachLayer(function(layer) {
+        if (!layer.feature) return;
+
+        const p = layer.feature.properties || {};
+
+        // Get branch name from territory properties
+        const branchName = String(
+            p.branch ||
+            p.Branch_Name ||
+            p.branch_name ||
+            p.territory ||
+            p.Territory ||
+            ''
+        ).trim().toLowerCase();
+
+        if (branchName === searchText) {
+            exactMatch = layer;
+        } else if (
+            branchName.includes(searchText) &&
+            !partialMatch
+        ) {
+            partialMatch = layer;
         }
-      });
+    });
 
+    const matchedLayer = exactMatch || partialMatch;
 
+    if (matchedLayer) {
+        map.fitBounds(matchedLayer.getBounds(), {
+            padding: [30, 30],
+            maxZoom: 15
+        });
+
+        matchedLayer.openPopup();
+    } else {
+        alert('Branch not found in branch territories.');
+    }
+}
     // --------------------------------------------------
     // 7. NEW LAYER: VILLAGE TERRITORIES
     // Each village is colored by its branch name.
@@ -386,8 +385,8 @@
     const villageLayer = L.geoJSON(null, {
   style: function(feature) {
     return {
-      color: '#D3D3D3',       // Light grey border
-      weight: 1,              // Border thickness
+      color: '#404040',       // Light grey border
+      weight: .3,              // Border thickness
       fillColor: '#F8F5E9',   // Off-white fill
       fillOpacity: 0.20       // 20% opacity
     };
@@ -398,12 +397,12 @@
         const branch = getBranchName(p);
 
         const details = Object.entries(p)
-          .map(([key, value]) => `${key}: ${value ?? ''}`)
+          .map(([key, value]) => ${key}: ${value ?? ''})
           .join('<br>');
 
         layer.bindPopup(
-          `<strong>Village Territory</strong><br>` +
-          `<strong>Branch: ${branch}</strong><br>` +
+          <strong>Village Territory</strong><br> +
+          <strong>Branch: ${branch}</strong><br> +
           details
         );
 
@@ -419,7 +418,6 @@
         });
       }
     });
-
 
     // --------------------------------------------------
     // 8. LOAD ALL FOUR GEOJSON FILES
