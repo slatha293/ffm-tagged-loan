@@ -201,50 +201,50 @@
     // --------------------------------------------------
 
     const territoryLayer = L.geoJSON(null, {
-      style: function(feature) {
-        const branch = getBranchName(feature.properties);
-        const color = getBranchColor(branch);
+  style: function(feature) {
+    const branch = getBranchName(feature.properties);
+    const color = getBranchColor(branch);
 
-        return {
-          color: color,
-          weight: 2,
-          fillColor: color,
-          fillOpacity: 0.30
-        };
-      },
+    return {
+      color: '#00008B',  // Same dark blue border for all territories
+      weight: 2,
+      fillColor: color,  // Different fill color by branch
+      fillOpacity: 0.30
+    };
+  },
 
-      onEachFeature: function(feature, layer) {
-        const p = feature.properties || {};
+  onEachFeature: function(feature, layer) {
+    const p = feature.properties || {};
 
-        const heading =
-          p.branch ||
-          p.Branch_Name ||
-          p.branch_name ||
-          p.territory ||
-          p.Territory ||
-          'Branch Territory';
+    const heading =
+      p.branch ||
+      p.Branch_Name ||
+      p.branch_name ||
+      p.territory ||
+      p.Territory ||
+      'Branch Territory';
 
-        const details = Object.entries(p)
-          .map(([key, value]) => `${key}: ${value ?? ''}`)
-          .join('<br>');
+    const details = Object.entries(p)
+      .map(([key, value]) => ${key}: ${value ?? ''})
+      .join('<br>');
 
-        layer.bindPopup(
-          `<strong>${heading}</strong><br>${details}`
-        );
+    layer.bindPopup(
+      <strong>${heading}</strong><br>${details}
+    );
 
-        layer.on('mouseover', function() {
-          layer.setStyle({
-            weight: 3,
-            fillOpacity: 0.45
-          });
-        });
-
-        layer.on('mouseout', function() {
-          territoryLayer.resetStyle(layer);
-        });
-      }
+    layer.on('mouseover', function() {
+      layer.setStyle({
+        color: '#00008B',  // Keep the border dark blue on hover
+        weight: 3,
+        fillOpacity: 0.45
+      });
     });
 
+    layer.on('mouseout', function() {
+      territoryLayer.resetStyle(layer);
+    });
+  }
+});
 
     // --------------------------------------------------
     // 5. EXISTING LAYER: LOAN POINTS
