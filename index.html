@@ -428,6 +428,12 @@
       const layer = match.layer;
       const source = match.source;
 
+      // NEW CODE: Update selected branch heading
+      const selectedBranch = getBranchName(layer.feature.properties);
+
+      document.getElementById('selectedBranchName').innerText =
+     'Selected Branch: ' + selectedBranch;
+
       if (!map.hasLayer(source)) {
         source.addTo(map);
       }
