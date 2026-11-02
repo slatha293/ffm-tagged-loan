@@ -32,12 +32,10 @@
 
     .branch-pin {
       position: relative;
-      width: 10px;
-      height: 10px;
-      background: linear-gradient(
-        135deg, #4CAF50 0%, #006400 50%, #003300 100%
-      );
-      border: 1px solid #003300;
+      width: 20px;
+      height: 20px;
+      background: #0058d4;
+      border: 2px solid #0012b5;
       border-radius: 50%;
       box-shadow: 1px 2px 3px rgba(0,0,0,0.4);
       box-sizing: border-box;
@@ -46,16 +44,13 @@
     .branch-pin::after {
       content: "";
       position: absolute;
-      width: 6px;
-      height: 6px;
-      left: 50%;
-      bottom: -3px;
-      background: #006400;
-      border-right: 1px solid #003300;
-      border-bottom: 1px solid #003300;
-      transform: translateX(-50%) rotate(45deg);
-      z-index: -1;
-    }
+      width: 7px;
+      height: 10px;
+      background: white;
+      border-radius: 50%;
+    top: 5px;
+    left: 5px;
+   }
 
     #branch-search {
       position: absolute;
@@ -296,11 +291,11 @@
     // --------------------------------------------------
 
     const branchPinIcon = L.divIcon({
-      className: 'branch-pin-wrapper',
-      html: '<div class="branch-pin"></div>',
-      iconSize: [10, 13],
-      iconAnchor: [5, 13],
-      popupAnchor: [0, -13]
+    className: 'branch-pin-wrapper',
+    html: '<div class="branch-pin"></div>',
+    iconSize: [24, 24],
+    iconAnchor: [12, 24],
+    popupAnchor: [0, -24]
     });
 
     // --------------------------------------------------
