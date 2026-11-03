@@ -433,6 +433,13 @@
 
       const layer = match.layer;
       const source = match.source;
+      // Update selected branch name
+      let selectedBranchName = getBranchName(
+      layer.feature.properties
+      );
+
+      document.getElementById('selected-branch').textContent =
+      'Selected Branch: ' + selectedBranchName;
 
       // Make sure the matching layer is visible
       if (!map.hasLayer(source)) {
