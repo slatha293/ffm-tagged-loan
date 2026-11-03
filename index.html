@@ -100,7 +100,7 @@
     <input
       type="text"
       id="branchSearchInput"
-      placeholder="Enter branch name..."
+      placeholder="Enter branch name & Loan ID"
     >
     <button type="button" id="searchBranchButton">
       Search
@@ -337,16 +337,31 @@
     });
 
     // --------------------------------------------------
-    // 9. BRANCH SEARCH
-    // Search branch points and territory polygons.
+    // 9. BRANCH NAME AND LOAN ID SEARCH
+    // Search branch points, territory polygons and loan points.
     // --------------------------------------------------
+
+    function getLoanId(properties) {
+      const p = properties || {};
+
+      const value =
+        p.loan_id ??
+        p.Loan_Id ??
+        p.Loan_ID ??
+        p.loanId ??
+        p.LOAN_ID ??
+        p.loanid ??
+        p.LoanID;
+
+      return String(value ?? '').trim();
+    }
 
     function searchBranch() {
       const input = document.getElementById('branchSearchInput');
       const searchText = input.value.trim().toLowerCase();
 
       if (!searchText) {
-        alert('Please enter a branch name.');
+        alert('Please enter a branch name or Loan ID.');
         input.focus();
         return;
       }
@@ -354,7 +369,8 @@
       let exactMatch = null;
       let partialMatch = null;
 
-      function checkLayer(layer, sourceLayer) {
+      // Search branch points and territory polygons
+      function checkBranchLayer(layer, sourceLayer) {
         if (!layer.feature) return;
 
         const branchName = getBranchName(
@@ -377,33 +393,53 @@
       }
 
       branchLayer.eachLayer(function(layer) {
-        checkLayer(layer, branchLayer);
+        checkBranchLayer(layer, branchLayer);
       });
 
       territoryLayer.eachLayer(function(layer) {
-        checkLayer(layer, territoryLayer);
+        checkBranchLayer(layer, territoryLayer);
       });
 
+      // Search Loan ID in loan points
+      loanPointsLayer.eachLayer(function(layer) {
+        if (!layer.feature) return;
+
+        const loanId = getLoanId(
+          layer.feature.properties
+        ).toLowerCase();
+
+        const result = {
+          layer: layer,
+          source: loanPointsLayer
+        };
+
+        if (loanId === searchText && !exactMatch) {
+          exactMatch = result;
+        } else if (
+          loanId.includes(searchText) &&
+          !partialMatch
+        ) {
+          partialMatch = result;
+        }
+      });
+
+      // Exact match gets priority
       const match = exactMatch || partialMatch;
 
       if (!match) {
-        alert('Branch not found. Check the branch name in your GeoJSON.');
+        alert('Branch Name or Loan ID not found.');
         return;
       }
 
       const layer = match.layer;
       const source = match.source;
 
-      // NEW CODE: Update selected branch heading
-      const selectedBranch = getBranchName(layer.feature.properties);
-
-      document.getElementById('selectedBranchName').innerText =
-     'Selected Branch: ' + selectedBranch;
-
+      // Make sure the matching layer is visible
       if (!map.hasLayer(source)) {
         source.addTo(map);
       }
 
+      // Zoom to matching feature
       if (typeof layer.getBounds === 'function') {
         const bounds = layer.getBounds();
 
@@ -414,15 +450,18 @@
           });
         }
       } else if (typeof layer.getLatLng === 'function') {
-        map.setView(layer.getLatLng(), 15);
+        map.setView(layer.getLatLng(), 17);
       }
 
+      // Open matching feature popup
       layer.openPopup();
     }
 
+    // Search button
     document.getElementById('searchBranchButton')
       .addEventListener('click', searchBranch);
 
+    // Enter key search
     document.getElementById('branchSearchInput')
       .addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
